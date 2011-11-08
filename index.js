@@ -67,6 +67,7 @@ module.exports = function(exportPath, patterns, options){
               filename: filename
             , inline: false
             , compileDebug: false
+            , client: true
           });
           
           if (typeof tmpl == 'function') {
@@ -89,8 +90,10 @@ module.exports = function(exportPath, patterns, options){
         results.forEach(function(template) {
           templates[template.filename] = template.fn;
         });
-        
-        var code = jade.runtime.escape.toString() +';'+ jade.runtime.attrs.toString() + '; return attrs(obj);'
+
+        var code = jade.runtime.escape.toString() +';'
+        code += jade.runtime.attrs.toString().replace(/exports\./g, '') + ';'
+        code += ' return attrs(obj);'
 
         payload.expose({
             attrs: new Function('obj', code)
