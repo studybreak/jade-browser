@@ -61,8 +61,6 @@ module.exports = function(exportPath, patterns, options){
             return cb(err);
           }
 
-          filename = filename.replace(root + '/', '');
-
           var tmpl = jade.compile(content, {
               filename: filename
             , inline: false
@@ -86,9 +84,10 @@ module.exports = function(exportPath, patterns, options){
       }
 
       function expose(e, results) {
-        var templates = {};
+        var templates = {}, filename;
         results.forEach(function(template) {
-          templates[template.filename] = template.fn;
+          filename = template.filename.replace(root + '/', '')
+          templates[filename] = template.fn;
         });
 
         var code = jade.runtime.escape.toString() +';'
