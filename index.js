@@ -69,7 +69,7 @@ module.exports = function(exportPath, patterns, options){
           });
           
           if (typeof tmpl == 'function') {
-            var fn = 'var jade=' + namespace + '; return anonymous(locals);'+ tmpl.toString();
+            var fn = 'var jade=window.' + namespace + '; return anonymous(locals);'+ tmpl.toString();
             fn = new Function('locals', fn);
             
             cb(null, {
