@@ -38,12 +38,24 @@ var express = require('express')
   , jade_browser = require('jade-browser')
   , app = express.createServer();
 
-
+// use jade-browser as middleware
 app.use(jade_browser.middleware('/js/templates.js', '**', options));
 
-// or configure the file watcher and cacheing
+```
+
+	Or, configure to add static file caching, instead.
+
+```javascript
+var jade_browser = require('jade-browser')
+
+// this will generate a file at this location: staticRoot + '/js/templates.js'
+jade_browser.cache('/js/templates.js', '**', 
+	{root: 'some/directory/with/views', staticRoot: __dirname  + '/public'});
+
+// or configure the file watcher and add static file caching
 if (env === 'development') {
-	jade_browser.watch('/js/templates.js', '**', options);
+	jade_browser.watch('/js/templates.js', '**', 
+		{root: 'some/directory/with/views', staticRoot: __dirname  + '/public'});
 }
 
 ```
@@ -58,7 +70,7 @@ if (env === 'development') {
   - `root`      The root of the views (default: __dirname)
   - `namespace` Namespace for the browser (default: 'jade')
   - `minify`    Minifies the output (default: false; 
-									If enabled and caching, '-min.js' file is automatically created)
+								If enabled and using caching, '-min.js' file is automatically created)
   - `maxAge`    Time in seconds to cache the results (default: 86400)
   - `cacheRoot` The file system path where compiled templates are placed ()
 
