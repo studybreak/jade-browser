@@ -17,6 +17,7 @@ app.use(jade_browser(url_endpoint, template_dir, options));
 ## Features
 
   * Jade templates are served as compiled functions.
+		* either as middleware or cached and served from a public directory
     * removes browser compatibility issues
     * increases speed of template execution
     * reduces file transfer size
@@ -37,7 +38,14 @@ var express = require('express')
   , jade_browser = require('jade-browser')
   , app = express.createServer();
 
-app.use(jade_browser('/js/templates.js', '**', options));
+
+app.use(jade_browser.middleware('/js/templates.js', '**', options));
+
+// or configure the file watcher and cacheing
+if (env === 'development') {
+	jade_browser.watch('/js/templates.js', '**', options);
+}
+
 ```
 
 ### Params
@@ -45,12 +53,15 @@ app.use(jade_browser('/js/templates.js', '**', options));
   - `patterns`  A single string or array of patterns used to glob for template files
   - `options`   Options object, see below (optional)
 
+
 #### Options
   - `root`      The root of the views (default: __dirname)
   - `namespace` Namespace for the browser (default: 'jade')
-  - `minify`    Minifies the output (default: false)
+  - `minify`    Minifies the output (default: false; 
+									If enabled and caching, '-min.js' file is automatically created)
   - `maxAge`    Time in seconds to cache the results (default: 86400)
-  
+  - `cacheRoot` The file system path where compiled templates are placed ()
+
 ### Browser
 
 ```javascript
