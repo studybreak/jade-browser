@@ -1,6 +1,7 @@
 # Jade Browser
 
-  Middleware for express/connect to expose jade templates to the web browser. It provides a few additional features like express-like render function with partial handling.
+  Middleware for express/connect and/or static file generator to expose jade templates to the web browser. 
+	It provides a few additional features like express-like render function with partial handling.
   
 ```javascript
 var express = require('express')
@@ -17,7 +18,7 @@ app.use(jade_browser(url_endpoint, template_dir, options));
 ## Features
 
   * Jade templates are served as compiled functions.
-		* either as middleware or cached and served from a public directory
+		* either as middleware or pre-cached and served from a public directory
     * removes browser compatibility issues
     * increases speed of template execution
     * reduces file transfer size
@@ -42,8 +43,7 @@ var express = require('express')
 app.use(jade_browser.middleware('/js/templates.js', '**', options));
 
 ```
-
-	Or, configure to add static file caching, instead.
+	Or, configure to add static file caching -- with or without express/connect.
 
 ```javascript
 var jade_browser = require('jade-browser')
@@ -52,7 +52,9 @@ var jade_browser = require('jade-browser')
 jade_browser.cache('/js/templates.js', '**', 
 	{root: 'some/directory/with/views', staticRoot: __dirname  + '/public'});
 
-// or configure the file watcher and add static file caching
+// or, configure the file watcher and add static file caching
+// you'll need to manually create the folder where the files should live
+// to compile, just save one of the files listed in the directory. 
 if (env === 'development') {
 	jade_browser.watch('/js/templates.js', '**', 
 		{root: 'some/directory/with/views', staticRoot: __dirname  + '/public'});
