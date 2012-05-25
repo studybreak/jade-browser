@@ -96,7 +96,10 @@ var write = function(options) {
 
 var process = exports.process = function(options, callback) {
   var files = [];
-
+  
+  options.build = false;
+  options.minified = false;
+  
   options.patterns.forEach(function(pattern) {
     pattern = path.join(options.root, pattern);
 
