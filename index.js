@@ -144,7 +144,7 @@ var process = exports.process = function(options, callback) {
 var build = exports.build = function(options, files, callback) {
   var templates = {}, filename;
   files.forEach(function(template) {
-    filename = template.filename.replace(root + '/', '')
+    filename = template.filename.replace(options.root + '/', '')
     templates[filename] = template.fn;
   });
   
