@@ -87,6 +87,7 @@ var recache = function(options, callback) {
   process(options, function() {
     write(options);
     if (callback) callback();
+    
   });
 };
 
@@ -95,12 +96,17 @@ var write = function(options) {
   var filename = options.cacheRoot + options.exportPath;
   
   // cache development version
-  fs.writeFile(filename, options.built, 'utf8');
+  fs.writeFileSync(filename, options.built, 'utf8');
   
   // cache minified version
   if (options.minify) {
-    fs.writeFile(filename.replace('.js', '-min.js'), options.minified, 'utf8');
+    fs.writeFileSync(filename.replace('.js', '-min.js'), options.minified, 'utf8');
   }
+  // do we have an event listener?
+  if (options.onWrite && typeof(options.onWrite) === 'function') {
+    options.onWrite();
+  };
+  
 }
 
 
