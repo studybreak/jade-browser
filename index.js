@@ -167,11 +167,11 @@ var build = exports.build = function(options, files, callback) {
   
   var code = jade.runtime.escape.toString() +';'
   code += jade.runtime.attrs.toString().replace(/exports\./g, '') + ';'
-  code += ' return attrs(obj);'
+  code += ' return attrs(obj, escaped);'
 
   var payload = new Expose();
   payload.expose({
-      attrs: new Function('obj', code)
+      attrs: new Function('obj', 'escaped', code)
     , escape: jade.runtime.escape
     , dirname: utils.dirname
     , normalize: utils.normalize
