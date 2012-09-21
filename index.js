@@ -10,7 +10,7 @@ var fs = require('fs')
   , utils = require('./lib/utils');
 
 
-var defaultOptions = exports.defaultOptions = 
+var defaultOptions = exports.defaultOptions =
   function(exportPath, patterns, options) {
     var options = options || {};
     options.ext = options.ext || 'jade';
@@ -25,7 +25,7 @@ var defaultOptions = exports.defaultOptions =
     options.regexp = utils.toRegExp(exportPath, true);
     options.headers = {
         'Cache-Control': 'public, max-age=' + options.maxAge
-      , 'Content-Type': 'text/javascript' 
+      , 'Content-Type': 'text/javascript'
     };
 
     if (typeof patterns == 'string') {
@@ -39,7 +39,7 @@ var defaultOptions = exports.defaultOptions =
 var middleware = exports.middleware = function(exportPath, patterns, options) {
   options = options || {};
   options = defaultOptions(exportPath, patterns, options);
-  
+
   return function(req, res, next){
     if (!req.url.match(options.regexp)) {
        return next();
@@ -87,17 +87,17 @@ var recache = function(options, callback) {
   process(options, function() {
     write(options);
     if (callback) callback();
-    
+
   });
 };
 
 var write = function(options) {
   console.log('Caching jade namespace:', options.namespace);
   var filename = options.cacheRoot + options.exportPath;
-  
+
   // cache development version
   fs.writeFileSync(filename, options.built, 'utf8');
-  
+
   // cache minified version
   if (options.minify) {
     fs.writeFileSync(filename.replace('.js', '-min.js'), options.minified, 'utf8');
@@ -106,13 +106,13 @@ var write = function(options) {
   if (options.onWrite && typeof(options.onWrite) === 'function') {
     options.onWrite();
   };
-  
+
 }
 
 
 var process = exports.process = function(options, callback) {
   var files = [];
-  
+
   options.patterns.forEach(function(pattern) {
     pattern = path.join(options.root, pattern);
 
@@ -125,7 +125,7 @@ var process = exports.process = function(options, callback) {
     } catch(e) {}
   });
   options.files = files;
-  
+
   var getFile = function(filename, callback) {
     fs.readFile(filename, 'utf8', function(err, content){
       if (err) return callback(err);
@@ -149,9 +149,9 @@ var process = exports.process = function(options, callback) {
         callback(new Error('Failed to compile'));
       }
 
-    });    
+    });
   };
-  
+
   async.map(options.files, getFile, function(err, files) {
     build(options, files, callback);
   })
@@ -164,7 +164,7 @@ var build = exports.build = function(options, files, callback) {
     filename = template.filename.replace(options.root + '/', '')
     templates[filename] = template.fn;
   });
-  
+
   var code = jade.runtime.escape.toString() +';'
   code += jade.runtime.attrs.toString().replace(/exports\./g, '') + ';'
   code += ' return attrs(obj, escaped);'
@@ -172,22 +172,22 @@ var build = exports.build = function(options, files, callback) {
   var payload = new Expose();
   payload.expose({
       attrs: new Function('obj', 'escaped', code)
-    , escape: jade.runtime.escape
+    , escape: new Function('html', jade.runtime.escape.toString())
     , dirname: utils.dirname
     , normalize: utils.normalize
     , render: render(options.namespace)
     , templates: templates
   }, options.namespace, 'output');
-  
+
   // cache
   options.built = payload.exposed('output');
-  
+
   if (options.minify) {
     var code = parser.parse(options.built);
     code = compiler.ast_mangle(code);
     code = compiler.ast_squeeze(code);
     options.minified = compiler.gen_code(code);
   }
-  
+
   callback();
 }
