@@ -169,10 +169,21 @@ var build = exports.build = function(options, files, callback) {
   code += jade.runtime.attrs.toString().replace(/exports\./g, '') + ';'
   code += ' return attrs(obj, escaped);'
 
+  // need to remove the escape from the name of the function...
+  // leaks into the global namespace in IE and clobbers default escape
+  // copy here to avoid sting subs on runtime.escape
+  var escape = function(html){
+    return String(html)
+      .replace(/&(?!(\w+|\#\d+);)/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  };
+
   var payload = new Expose();
   payload.expose({
       attrs: new Function('obj', 'escaped', code)
-    , escape: new Function('html', jade.runtime.escape.toString())
+    , escape: escape
     , dirname: utils.dirname
     , normalize: utils.normalize
     , render: render(options.namespace)
