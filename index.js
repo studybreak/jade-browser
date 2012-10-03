@@ -7,8 +7,8 @@ var fs = require('fs')
   , compiler = require('uglify-js').uglify
   , Expose = require('./lib/expose')
   , render = require('./lib/render').render
-  , utils = require('./lib/utils');
-
+  , utils = require('./lib/utils')
+  , crypto = require('crypto');
 
 var defaultOptions = exports.defaultOptions =
   function(exportPath, patterns, options) {
@@ -33,6 +33,14 @@ var defaultOptions = exports.defaultOptions =
     }
     options.patterns = patterns;
     options.files = [];
+
+    if (options.checksum) {
+      options.checksumFile = options.cacheRoot +
+                             options.exportPath.replace('.js', '-checksum.js');
+      try {
+        options.checksums = require(options.checksumFile);
+      } catch(e) {}
+    }
     return options;
 };
 
@@ -59,22 +67,23 @@ var watch = exports.watch = function(exportPath, patterns, options, callback) {
   options = options || {};
   options = defaultOptions(exportPath, patterns, options);
 
-  process(options, function() {
-    console.log('Watching jade namespace:', options.namespace);
-    options.files.forEach(function(fd) {
-      // console.log('Watching:', fd);
-      fs.watchFile(fd, {persistent: true, interval: 500}, function(curr, prev) {
-        // make sure we don't fire twice...
-        if (curr.mtime.getTime() === prev.mtime.getTime()) return;
-        console.log("File changed:", fd);
+  var files = exports.files(options);
+  console.log('Watching jade namespace:', options.namespace);
+  files.forEach(function(fd) {
 
-        options.built = false;
-        options.minified = false;
-        recache(options, callback)
+    // console.log('Watching:', fd);
+    fs.watchFile(fd, {persistent: true, interval: 500}, function(curr, prev) {
+      // make sure we don't fire twice...
+      if (curr.mtime.getTime() === prev.mtime.getTime()) return;
+      console.log("File changed:", fd);
 
-      })
-    });
+      options.built = false;
+      options.minified = false;
+      recache(options, callback)
+
+    })
   });
+
 };
 
 var cache = exports.cache = function(exportPath, patterns, options, callback) {
@@ -85,9 +94,10 @@ var cache = exports.cache = function(exportPath, patterns, options, callback) {
 
 var recache = function(options, callback) {
   process(options, function() {
-    write(options);
+    if (checksumsChanged(options)) {
+      write(options);
+    }
     if (callback) callback();
-
   });
 };
 
@@ -100,7 +110,7 @@ var write = function(options) {
 
   // cache minified version
   if (options.minify) {
-    fs.writeFileSync(filename.replace('.js', '-min.js'), options.minified, 'utf8');
+    fs.writeFileSync(filename.replace('.js', '.min.js'), options.minified, 'utf8');
   }
   // do we have an event listener?
   if (options.onWrite && typeof(options.onWrite) === 'function') {
@@ -109,10 +119,40 @@ var write = function(options) {
 
 }
 
+var checksumsChanged = function(options) {
+  var start = new Date().getTime();
 
-var process = exports.process = function(options, callback) {
+  var namespace = options.namespace;
+  var checksums = {};
+
+  var hash = crypto.createHash('md5');
+  hash.update(options.built);
+  checksums[namespace] = hash.digest('hex');
+
+  // do we have a minified checksum?
+  if (options.minify) {
+    hash = crypto.createHash('md5');
+    hash.update(options.minified);
+    checksums[namespace + '.min'] = hash.digest('hex');
+  }
+
+  // only write the checksums if they've changed
+  if (!options.checksums ||
+      options.checksums[namespace] !== checksums[namespace]) {
+        options.checksums = checksums;
+        fs.writeFileSync(options.checksumFile, 'module.exports = ' + JSON.stringify(checksums));
+        console.log('Writing checksums for namespace:', namespace);
+        return true;
+  }
+
+  console.log('No changes with jade namespace:', namespace);
+  return false;
+}
+
+var files = exports.files = function(options) {
+  if (options.files && options.files.length) return options.files;
+
   var files = [];
-
   options.patterns.forEach(function(pattern) {
     pattern = path.join(options.root, pattern);
 
@@ -125,6 +165,16 @@ var process = exports.process = function(options, callback) {
     } catch(e) {}
   });
   options.files = files;
+  // console.log('Matched', files.length, 'files to watch');
+
+  return files;
+}
+
+var process = exports.process = function(options, callback) {
+
+  if (!options.files || !options.files.length) {
+    options.files = exports.files(options);
+  }
 
   var getFile = function(filename, callback) {
     fs.readFile(filename, 'utf8', function(err, content){
@@ -158,6 +208,8 @@ var process = exports.process = function(options, callback) {
 }
 
 var build = exports.build = function(options, files, callback) {
+  // console.log('Start building namespace', options.namespace);
+  var start = new Date().getTime();
 
   var templates = {}, filename;
   files.forEach(function(template) {
@@ -200,5 +252,6 @@ var build = exports.build = function(options, files, callback) {
     options.minified = compiler.gen_code(code);
   }
 
+  // console.log('Finished building', options.namespace, new Date().getTime() - start + 'ms');
   callback();
 }
